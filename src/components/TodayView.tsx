@@ -143,7 +143,10 @@ export default function TodayView() {
           status: 'completed',
           completed_at: new Date().toISOString(),
         };
-        const { error } = await supabase.from('habit_logs').insert(insertData);
+        const { error } = await supabase
+          .from('habit_logs')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .insert(insertData as any);
 
         if (error) throw error;
       }
@@ -211,7 +214,8 @@ export default function TodayView() {
             completed_at: completedAt,
             created_at: task.created_at,
           };
-          await supabase.from('task_history').insert(historyData);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await supabase.from('task_history').insert(historyData as any);
         }
       }
 

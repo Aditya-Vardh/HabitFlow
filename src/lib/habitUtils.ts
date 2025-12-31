@@ -110,7 +110,8 @@ export async function checkAndCreateMissedLogs(userId: string) {
         };
         const { error: insertError } = await supabase
           .from('habit_logs')
-          .insert(insertData);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .insert(insertData as any);
 
         if (insertError) throw insertError;
       }

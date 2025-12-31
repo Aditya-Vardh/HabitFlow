@@ -56,7 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert(profileData);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(profileData as any);
 
       if (profileError) throw profileError;
     }

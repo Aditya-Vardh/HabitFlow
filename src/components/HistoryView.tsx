@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Calendar, CheckCircle, XCircle, Filter, TrendingUp, Award } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, Filter, TrendingUp, Award, Trash2 } from 'lucide-react';
 import { Database } from '../lib/database.types';
 
 type HabitLog = Database['public']['Tables']['habit_logs']['Row'] & {
@@ -17,29 +17,95 @@ export default function HistoryView() {
   const [view, setView] = useState<'habits' | 'tasks'>('habits');
   const [dateFilter, setDateFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      loadHistory();
+      loadProfileAndHistory();
     }
   }, [user]);
 
+  // Fetch profile to determine account age and then load history accordingly
+  const loadProfileAndHistory = async () => {
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('created_at')
+        .eq('id', user!.id)
+        .maybeSingle() as { data: { created_at: string } | null; error: unknown };
+
+      if (profileError) throw profileError;
+
+      const createdAt = (profile as { created_at: string } | null)?.created_at ?? null;
+      setProfileCreatedAt(createdAt);
+
+      // Determine if user is new (created within last 24 hours)
+      if (createdAt) {
+        const createdDate = new Date(createdAt);
+        const days = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+        setIsNewUser(days <= 1);
+
+        // If user was created today, prune any older task_history entries older than account creation date
+        if (days <= 1) {
+          try {
+            // delete older task_history rows so brand-new users don't see old data
+            const { error: delErr } = await supabase
+              .from('task_history')
+              .delete()
+              .lt('completed_at', createdAt)
+              .eq('user_id', user!.id);
+            if (delErr) console.error('Error pruning old task_history:', delErr);
+          } catch (e) {
+            console.error('Error pruning old task_history:', e);
+          }
+
+          // also prune habit_logs older than creation date
+          try {
+            const { error: delHabitErr } = await supabase
+              .from('habit_logs')
+              .delete()
+              .lt('date', createdAt)
+              .eq('user_id', user!.id);
+            if (delHabitErr) console.error('Error pruning old habit_logs:', delHabitErr);
+          } catch (e) {
+            console.error('Error pruning old habit_logs:', e);
+          }
+        }
+      }
+
+      // finally load history normally (will respect prunes above)
+      await loadHistory();
+    } catch (error) {
+      console.error('Error loading profile/history:', error);
+      setLoading(false);
+    }
+  };
+
   const loadHistory = async () => {
     try {
-      const [logsRes, historyRes] = await Promise.all([
-        supabase
-          .from('habit_logs')
-          .select('*, habits(title, color)')
-          .eq('user_id', user!.id)
-          .order('date', { ascending: false })
-          .limit(100),
-        supabase
-          .from('task_history')
-          .select('*')
-          .eq('user_id', user!.id)
-          .order('completed_at', { ascending: false })
-          .limit(100),
-      ]);
+      // If user is new, only load history since account creation (profileCreatedAt)
+      const habitQuery = supabase
+        .from('habit_logs')
+        .select('*, habits(title, color)')
+        .eq('user_id', user!.id)
+        .order('date', { ascending: false })
+        .limit(100);
+
+      const taskQuery = supabase
+        .from('task_history')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('completed_at', { ascending: false })
+        .limit(100);
+
+      if (isNewUser && profileCreatedAt) {
+        habitQuery.gte('date', profileCreatedAt);
+        taskQuery.gte('completed_at', profileCreatedAt);
+      }
+
+      const [logsRes, historyRes] = await Promise.all([habitQuery, taskQuery]);
 
       if (logsRes.error) throw logsRes.error;
       if (historyRes.error) throw historyRes.error;
@@ -149,6 +215,12 @@ export default function HistoryView() {
         </div>
       </div>
 
+      {isNewUser && (
+        <div className="mt-4 p-4 rounded-xl bg-yellow-900/20 border border-yellow-500/20 text-yellow-300">
+          You are a new user — older history entries (before account creation) were pruned to keep your history focused.
+        </div>
+      )}
+
       <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 border border-white/20">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex gap-2">
@@ -178,7 +250,7 @@ export default function HistoryView() {
             <Filter className="w-5 h-5 text-gray-400" />
             <select
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDateFilter(e.target.value)}
               className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
             >
               <option value="all">All Time</option>
@@ -189,7 +261,7 @@ export default function HistoryView() {
             {view === 'habits' && (
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
               >
                 <option value="all">All Status</option>
@@ -198,6 +270,33 @@ export default function HistoryView() {
                 <option value="skipped">Skipped</option>
               </select>
             )}
+
+            <button
+              onClick={async () => {
+                if (!confirm('Clear all history? This will permanently delete your habit logs and completed tasks.')) return;
+                setActionLoading(true);
+                try {
+                  const { error: thErr } = await supabase.from('task_history').delete().eq('user_id', user!.id);
+                  const { error: hlErr } = await supabase.from('habit_logs').delete().eq('user_id', user!.id);
+                  if (thErr || hlErr) {
+                    console.error('Error clearing history:', thErr || hlErr);
+                    alert('Failed to clear history. See console for details.');
+                  } else {
+                    // reload empty state
+                    setTaskHistory([]);
+                    setHabitLogs([]);
+                  }
+                } catch (e) {
+                  console.error('Error clearing history:', e);
+                } finally {
+                  setActionLoading(false);
+                }
+              }}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${actionLoading ? 'opacity-60 cursor-wait' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'}`}
+              disabled={actionLoading}
+            >
+              Clear History
+            </button>
           </div>
         </div>
 
@@ -299,9 +398,28 @@ export default function HistoryView() {
                         )}
                       </div>
                     </div>
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-lg ${colors.bg} ${colors.text} whitespace-nowrap ml-4`}>
-                      {task.priority.toUpperCase()}
-                    </span>
+                    <div className="flex items-center gap-3 whitespace-nowrap ml-4">
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-lg ${colors.bg} ${colors.text}`}>
+                        {task.priority.toUpperCase()}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Delete this history entry?')) return;
+                          try {
+                            const { error } = await supabase.from('task_history').delete().eq('id', task.id).eq('user_id', user!.id);
+                            if (error) throw error;
+                            setTaskHistory((prev) => prev.filter((t) => t.id !== task.id));
+                          } catch (e) {
+                            console.error('Error deleting history item:', e);
+                            alert('Failed to delete history entry. See console for details.');
+                          }
+                        }}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-white hover:text-red-400 transition-colors"
+                        title="Delete history entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })

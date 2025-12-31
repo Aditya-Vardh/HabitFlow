@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { Database } from '../lib/database.types';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { LogOut, Home, CheckCircle, TrendingUp, History, Loader2 } from 'lucide-react';
