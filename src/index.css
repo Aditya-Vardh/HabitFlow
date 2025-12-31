@@ -1,0 +1,291 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .backdrop-blur-glass {
+    backdrop-filter: blur(20px);
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+@keyframes floatReverse {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-30px, 30px) scale(0.9);
+  }
+  66% {
+    transform: translate(20px, -20px) scale(1.1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 15s ease infinite;
+}
+
+.animate-float {
+  animation: float 20s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 25s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 8s ease-in-out infinite;
+}
+
+.animate-rotate-slow {
+  animation: rotate 30s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), 0 0 40px rgba(56, 189, 248, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.5), 0 0 60px rgba(56, 189, 248, 0.3);
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 2000px 100%;
+  animation: shimmer 3s infinite;
+}
+
+.animate-glow {
+  animation: glow 4s ease-in-out infinite;
+}
+
+/* Celebration & Confetti styles */
+.confetti-root {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -10px;
+  opacity: 0.95;
+  transform-origin: center;
+  border-radius: 2px;
+  animation: confettiFall 2200ms cubic-bezier(.2,.8,.2,1) forwards, confettiRotate 1500ms linear infinite;
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes confettiRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Celebration background intensification */
+.celebrate-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(34,211,238,0.08), transparent 10%), radial-gradient(circle at 70% 80%, rgba(59,130,246,0.06), transparent 15%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+/* Full-screen celebration overlay */
+.full-celebration-overlay {
+  background: radial-gradient(circle at 50% 30%, rgba(251,113,133,0.10), transparent 20%), radial-gradient(circle at 50% 70%, rgba(34,211,238,0.06), transparent 28%);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+}
+
+.celebration-content {
+  max-width: 720px;
+}
+
+.celebration-badge {
+  background: linear-gradient(135deg, rgba(251,113,133,0.15), rgba(59,130,246,0.10));
+  border: 1px solid rgba(255,255,255,0.06);
+  color: white;
+  font-size: 28px;
+}
+
+.celebration-content h1 {
+  text-shadow: 0 6px 30px rgba(251,113,133,0.14);
+}
+
+.sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sparkles::before,
+.sparkles::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(251,113,133,0.9));
+  box-shadow: 0 0 40px rgba(251,113,133,0.22);
+  animation: sparkle 1000ms ease-in-out infinite;
+}
+
+.sparkles::before { left: 20%; top: 30%; animation-delay: 0ms }
+.sparkles::after { right: 18%; top: 40%; animation-delay: 350ms }
+
+@keyframes sparkle {
+  0% { transform: scale(0.7) translateY(0); opacity: 0.9 }
+  50% { transform: scale(1.2) translateY(-14px); opacity: 1 }
+  100% { transform: scale(0.8) translateY(6px); opacity: 0.8 }
+}
+
+/* Pulse for the progress circle in TodayView */
+.pulse-ring {
+  animation: pulseRing 1200ms cubic-bezier(.2,.9,.2,1);
+  box-shadow: 0 0 40px rgba(251,113,133,0.12);
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251,113,133,0)); }
+  30% { transform: scale(1.06); filter: drop-shadow(0 0 30px rgba(251,113,133,0.16)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251,113,133,0)); }
+}
+
+.celebrate-active .celebrate-overlay {
+  opacity: 1;
+}
+
+.celebrate-active .animate-float,
+.celebrate-active .animate-float-reverse,
+.celebrate-active .animate-pulse-slow {
+  filter: drop-shadow(0 0 30px rgba(34,211,238,0.12));
+}
+
+/* Full celebration intensification */
+.celebrate-active.celebrate-full .celebrate-overlay {
+  opacity: 1;
+  background: radial-gradient(circle at 30% 20%, rgba(251,113,133,0.12), transparent 15%), radial-gradient(circle at 70% 80%, rgba(59,130,246,0.08), transparent 20%);
+}
+
+.celebrate-full .confetti-piece {
+  filter: drop-shadow(0 6px 20px rgba(0,0,0,0.25));
+}
