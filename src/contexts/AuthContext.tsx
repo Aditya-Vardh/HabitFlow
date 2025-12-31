@@ -53,6 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user.email!,
         full_name: fullName,
         username: email.split('@')[0],
+        // ensure history starts now for existing/new signups
+        history_started_at: new Date().toISOString(),
       };
       const { error: profileError } = await supabase
         .from('profiles')

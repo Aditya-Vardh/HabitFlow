@@ -18,6 +18,7 @@ export interface Database {
           preferences: Json
           created_at: string
           updated_at: string
+          history_started_at: string | null
         }
         Insert: {
           id: string
@@ -27,6 +28,7 @@ export interface Database {
           preferences?: Json
           created_at?: string
           updated_at?: string
+          history_started_at?: string | null
         }
         Update: {
           id?: string
@@ -36,6 +38,7 @@ export interface Database {
           preferences?: Json
           created_at?: string
           updated_at?: string
+          history_started_at?: string | null
         }
       }
       habits: {

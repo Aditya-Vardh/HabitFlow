@@ -43,8 +43,9 @@ export default function HistoryView() {
 
       // Determine if user is new (created within last 24 hours)
       if (createdAt) {
-        const createdDate = new Date(createdAt);
-        const days = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+        const createdDateObj = new Date(createdAt);
+        const createdDate = createdDateObj.toISOString().split('T')[0]; // date-only for habit_logs
+        const days = (Date.now() - createdDateObj.getTime()) / (1000 * 60 * 60 * 24);
         setIsNewUser(days <= 1);
 
         // If user was created today, prune any older task_history entries older than account creation date
@@ -61,17 +62,21 @@ export default function HistoryView() {
             console.error('Error pruning old task_history:', e);
           }
 
-          // also prune habit_logs older than creation date
+          // also prune habit_logs older than creation date (compare date-only)
           try {
             const { error: delHabitErr } = await supabase
               .from('habit_logs')
               .delete()
-              .lt('date', createdAt)
+              .lt('date', createdDate)
               .eq('user_id', user!.id);
             if (delHabitErr) console.error('Error pruning old habit_logs:', delHabitErr);
           } catch (e) {
             console.error('Error pruning old habit_logs:', e);
           }
+
+          // Load history constrained to creation date
+          await loadHistory(createdDate, createdAt);
+          return;
         }
       }
 
@@ -83,9 +88,9 @@ export default function HistoryView() {
     }
   };
 
-  const loadHistory = async () => {
+  const loadHistory = async (sinceHabitDate?: string, sinceTaskIso?: string) => {
     try {
-      // If user is new, only load history since account creation (profileCreatedAt)
+      // Build queries
       const habitQuery = supabase
         .from('habit_logs')
         .select('*, habits(title, color)')
@@ -100,8 +105,18 @@ export default function HistoryView() {
         .order('completed_at', { ascending: false })
         .limit(100);
 
-      if (isNewUser && profileCreatedAt) {
-        habitQuery.gte('date', profileCreatedAt);
+      // Apply explicit since filters if provided (habit uses date-only)
+      if (sinceHabitDate) {
+        habitQuery.gte('date', sinceHabitDate);
+      } else if (isNewUser && profileCreatedAt) {
+        // fallback: if flagged as new user, use profileCreatedAt (date-only conversion)
+        const dateOnly = new Date(profileCreatedAt).toISOString().split('T')[0];
+        habitQuery.gte('date', dateOnly);
+      }
+
+      if (sinceTaskIso) {
+        taskQuery.gte('completed_at', sinceTaskIso);
+      } else if (isNewUser && profileCreatedAt) {
         taskQuery.gte('completed_at', profileCreatedAt);
       }
 
@@ -348,6 +363,24 @@ export default function HistoryView() {
                       <span className={`text-xs font-semibold px-3 py-1 rounded-lg ${colors.bg} ${colors.text} uppercase`}>
                         {log.status}
                       </span>
+
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Delete this habit log entry?')) return;
+                          try {
+                            const { error } = await supabase.from('habit_logs').delete().eq('id', log.id).eq('user_id', user!.id);
+                            if (error) throw error;
+                            setHabitLogs((prev) => prev.filter((h) => h.id !== log.id));
+                          } catch (e) {
+                            console.error('Error deleting habit log:', e);
+                            alert('Failed to delete habit log. See console for details.');
+                          }
+                        }}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-white hover:text-red-400 transition-colors ml-2"
+                        title="Delete habit log"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );

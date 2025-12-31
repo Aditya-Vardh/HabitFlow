@@ -156,9 +156,8 @@ export default function TasksView() {
           status: taskData.status,
           due_date: taskData.due_date,
         };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('tasks') as any)
+        const { error } = await supabase
+          .from('tasks')
           .update(updateData)
           .eq('id', editingTask.id);
 
@@ -216,10 +215,23 @@ export default function TasksView() {
             completed_at: completedAt,
             created_at: task.created_at,
           };
-          await supabase
-            .from('task_history')
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .insert(historyData as any);
+          // Respect user's history start; fetch their profile's history_started_at
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('history_started_at')
+              .eq('id', user!.id)
+              .maybeSingle() as { data: { history_started_at: string | null } | null, error?: unknown };
+
+            const historyStarted = (profile as { history_started_at?: string | null } | null)?.history_started_at ? new Date((profile as { history_started_at?: string | null }).history_started_at!).toISOString() : null;
+            if (!historyStarted || new Date(completedAt) >= new Date(historyStarted)) {
+              await supabase
+                .from('task_history')
+                .insert(historyData);
+            }
+          } catch (e) {
+            console.error('Error inserting task history:', e);
+          }
         }
       } else {
         updateData.completed_at = null;
@@ -227,8 +239,8 @@ export default function TasksView() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('tasks') as any)
+const { error } = await supabase
+          .from('tasks')
         .update(updateData)
         .eq('id', taskId);
 

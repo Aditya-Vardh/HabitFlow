@@ -129,8 +129,8 @@ export default function TodayView() {
           status: newStatus,
           completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
         };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('habit_logs') as any)
+        const { error } = await supabase
+          .from('habit_logs')
           .update(updateData)
           .eq('id', existingLog.id);
 
@@ -214,8 +214,22 @@ export default function TodayView() {
             completed_at: completedAt,
             created_at: task.created_at,
           };
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await supabase.from('task_history').insert(historyData as any);
+
+          // Respect user's history start; fetch their profile's history_started_at
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('history_started_at')
+              .eq('id', user!.id)
+              .maybeSingle() as { data: { history_started_at: string | null } | null, error?: unknown };
+
+            const historyStarted = (profile as { history_started_at?: string | null } | null)?.history_started_at ? new Date((profile as { history_started_at?: string | null }).history_started_at!).toISOString() : null;
+            if (!historyStarted || new Date(completedAt) >= new Date(historyStarted)) {
+              await supabase.from('task_history').insert(historyData);
+            }
+          } catch (e) {
+            console.error('Error inserting task history:', e);
+          }
         }
       }
 

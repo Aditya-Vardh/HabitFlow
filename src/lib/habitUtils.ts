@@ -19,12 +19,29 @@ export async function updateHabitStreaks(userId: string) {
     const habitList = habits as Array<{ id: string }>;
 
     for (const habit of habitList) {
-      const { data: logs, error: logsError } = await supabase
+      // Respect profile history start: skip computing logs older than history_started_at
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('history_started_at')
+        .eq('id', userId)
+        .maybeSingle() as { data: { history_started_at: string | null } | null, error?: unknown };
+
+      const sinceDate = (profile as { history_started_at?: string | null } | null)?.history_started_at ? new Date((profile as { history_started_at?: string | null }).history_started_at!).toISOString().split('T')[0] : undefined;
+
+      // Build the query and apply the conditional gte() if sinceDate is defined
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let logsQuery: any = supabase
         .from('habit_logs')
         .select('date, status')
         .eq('habit_id', habit.id)
         .order('date', { ascending: false })
         .limit(365);
+
+      if (sinceDate) {
+        logsQuery = logsQuery.gte('date', sinceDate);
+      }
+
+      const { data: logs, error: logsError } = await logsQuery;
 
       if (logsError) throw logsError;
       if (!logs || logs.length === 0) continue;
