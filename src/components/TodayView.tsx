@@ -129,10 +129,12 @@ export default function TodayView() {
           status: newStatus,
           completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
         };
-        const { error } = await supabase
+        const result = await supabase
           .from('habit_logs')
+          // @ts-expect-error Supabase type inference issue
           .update(updateData)
           .eq('id', existingLog.id);
+        const { error } = result;
 
         if (error) throw error;
       } else {
@@ -213,6 +215,7 @@ export default function TodayView() {
             due_date: task.due_date,
             completed_at: completedAt,
             created_at: task.created_at,
+            archived_at: new Date().toISOString(),
           };
 
           // Respect user's history start; fetch their profile's history_started_at
@@ -225,7 +228,7 @@ export default function TodayView() {
 
             const historyStarted = (profile as { history_started_at?: string | null } | null)?.history_started_at ? new Date((profile as { history_started_at?: string | null }).history_started_at!).toISOString() : null;
             if (!historyStarted || new Date(completedAt) >= new Date(historyStarted)) {
-              await supabase.from('task_history').insert(historyData);
+              await supabase.from('task_history').insert(historyData as any);
             }
           } catch (e) {
             console.error('Error inserting task history:', e);

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import type { Database } from '../lib/database.types';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { LogOut, Home, CheckCircle, TrendingUp, History, Loader2 } from 'lucide-react';
+import { LogOut, Home, CheckCircle, TrendingUp, History, Loader2, Settings as SettingsIcon } from 'lucide-react';
 import TodayView from './TodayView';
 import HabitsView from './HabitsView';
 import TasksView from './TasksView';
@@ -10,6 +10,46 @@ import HistoryView from './HistoryView';
 import Logo from './Logo';
 import Confetti from './Confetti';
 import { useRef } from 'react';
+
+class ErrorBoundary extends React.Component<{children?: React.ReactNode; onReset?: ()=>void}, {hasError: boolean}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, info: any) {
+    console.error('ErrorBoundary caught an error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-red-700/90 text-white p-6 rounded-xl max-w-md w-full">
+            <p className="font-bold">Failed to load the Settings component.</p>
+            <p className="mt-2 text-sm">Try closing and reopening Settings, or reload the app.</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false });
+                  if (this.props.onReset) this.props.onReset();
+                }}
+                className="px-3 py-2 rounded bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children || null;
+  }
+}
 
 type View = 'today' | 'habits' | 'tasks' | 'history';
 
@@ -131,6 +171,9 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  const [showSettings, setShowSettings] = useState(false);
+  const SettingsLazy = lazy(() => import('./Settings'));
 
   const handleSignOut = async () => {
     try {
@@ -267,13 +310,23 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-300">Welcome back, <span className="text-white font-semibold">{profile?.full_name || 'User'}</span></p>
                 </div>
               </div>
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all duration-200 border border-white/10 backdrop-blur-sm hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-cyan-500/20"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all duration-200 border border-white/10 backdrop-blur-sm hover:scale-105 active:scale-95"
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all duration-200 border border-white/10 backdrop-blur-sm hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-cyan-500/20"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -306,8 +359,31 @@ export default function Dashboard() {
           {currentView === 'habits' && <HabitsView />}
           {currentView === 'tasks' && <TasksView />}
           {currentView === 'history' && <HistoryView />}
+          {currentView === 'today' && <TodayView />}
+          {currentView === 'habits' && <HabitsView />}
+          {currentView === 'tasks' && <TasksView />}
+          {currentView === 'history' && <HistoryView />}
         </main>
       </div>
+
+      {/* Settings modal */}
+      {showSettings && (
+        <ErrorBoundary onReset={() => setShowSettings(false)}>
+          <Suspense fallback={null}>
+            {/* Lazy-load Settings to avoid circular import problems */}
+            <SettingsLazy open={showSettings} onClose={() => setShowSettings(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {/* Floating settings button for small screens (visible when header buttons might be off-screen) */}
+      <button
+        onClick={() => setShowSettings(true)}
+        className="fixed bottom-6 right-6 z-50 sm:hidden flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/30"
+        aria-label="Open settings"
+      >
+        <SettingsIcon className="w-5 h-5" />
+      </button>
     </div>
   );
 }

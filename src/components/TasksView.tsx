@@ -28,6 +28,16 @@ export default function TasksView() {
     if (user) {
       loadTasks();
     }
+
+    const handler = () => loadTasks();
+    window.addEventListener('settings:tasksReset', handler as EventListener);
+    window.addEventListener('settings:resetAll', handler as EventListener);
+    window.addEventListener('dataChanged', handler as EventListener);
+    return () => {
+      window.removeEventListener('settings:tasksReset', handler as EventListener);
+      window.removeEventListener('settings:resetAll', handler as EventListener);
+      window.removeEventListener('dataChanged', handler as EventListener);
+    };
   }, [user]);
 
   const createSampleTasks = async () => {
@@ -156,8 +166,9 @@ export default function TasksView() {
           status: taskData.status,
           due_date: taskData.due_date,
         };
-        const { error } = await supabase
-          .from('tasks')
+        // cast to any to avoid PostgREST generic inference issues with generated types
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase.from('tasks') as any)
           .update(updateData)
           .eq('id', editingTask.id);
 
@@ -225,9 +236,10 @@ export default function TasksView() {
 
             const historyStarted = (profile as { history_started_at?: string | null } | null)?.history_started_at ? new Date((profile as { history_started_at?: string | null }).history_started_at!).toISOString() : null;
             if (!historyStarted || new Date(completedAt) >= new Date(historyStarted)) {
-              await supabase
-                .from('task_history')
-                .insert(historyData);
+              // cast to any to avoid PostgREST type mismatch for inserts
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('task_history') as any)
+                .insert(historyData as any);
             }
           } catch (e) {
             console.error('Error inserting task history:', e);
@@ -239,8 +251,8 @@ export default function TasksView() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { error } = await supabase
-          .from('tasks')
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('tasks') as any)
         .update(updateData)
         .eq('id', taskId);
 

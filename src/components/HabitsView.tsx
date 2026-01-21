@@ -28,6 +28,16 @@ export default function HabitsView() {
     if (user) {
       loadHabits();
     }
+
+    const handler = () => loadHabits();
+    window.addEventListener('settings:habitsReset', handler as EventListener);
+    window.addEventListener('settings:resetAll', handler as EventListener);
+    window.addEventListener('dataChanged', handler as EventListener);
+    return () => {
+      window.removeEventListener('settings:habitsReset', handler as EventListener);
+      window.removeEventListener('settings:resetAll', handler as EventListener);
+      window.removeEventListener('dataChanged', handler as EventListener);
+    };
   }, [user]);
 
   const createSampleHabits = async () => {

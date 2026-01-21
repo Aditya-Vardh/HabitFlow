@@ -19,6 +19,7 @@ export interface Database {
           created_at: string
           updated_at: string
           history_started_at: string | null
+          deleted_at: string | null
         }
         Insert: {
           id: string
@@ -29,6 +30,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           history_started_at?: string | null
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -39,6 +41,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           history_started_at?: string | null
+          deleted_at?: string | null
         }
       }
       habits: {
@@ -55,6 +58,7 @@ export interface Database {
           is_active: boolean
           created_at: string
           updated_at: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -69,6 +73,7 @@ export interface Database {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -83,6 +88,7 @@ export interface Database {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
       }
       habit_logs: {
@@ -94,6 +100,7 @@ export interface Database {
           status: 'completed' | 'missed' | 'skipped'
           completed_at: string | null
           notes: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -103,6 +110,7 @@ export interface Database {
           status: 'completed' | 'missed' | 'skipped'
           completed_at?: string | null
           notes?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -112,6 +120,7 @@ export interface Database {
           status?: 'completed' | 'missed' | 'skipped'
           completed_at?: string | null
           notes?: string
+          deleted_at?: string | null
         }
       }
       tasks: {
@@ -126,6 +135,7 @@ export interface Database {
           completed_at: string | null
           created_at: string
           updated_at: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -138,6 +148,7 @@ export interface Database {
           completed_at?: string | null
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -150,6 +161,7 @@ export interface Database {
           completed_at?: string | null
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
       }
       task_history: {
@@ -164,6 +176,7 @@ export interface Database {
           completed_at: string
           created_at: string
           archived_at: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -176,6 +189,7 @@ export interface Database {
           completed_at: string
           created_at: string
           archived_at?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -188,6 +202,7 @@ export interface Database {
           completed_at?: string
           created_at?: string
           archived_at?: string
+          deleted_at?: string | null
         }
       }
     }
